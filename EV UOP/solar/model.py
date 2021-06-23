@@ -41,6 +41,12 @@ class ConceptModel(Model):
         ControlAgent = Charging_Control_Agent('control_value',self)
         self.schedule.add(ControlAgent)
         
+        self.hour = EvAgent.hour
+        self.P = EvAgent.Power()
+        self.D = EvAgent.Get_Act_speed()
+        self.SOC_value = ControlAgent.SoC()
+        self.E = 10000
+        
         if grid_positions == "uncontrolled":
             if 9 <= self.hour <= 16:
                 print("Charge Pole is Available - U Can Charge..!!!")
