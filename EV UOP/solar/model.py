@@ -1,6 +1,7 @@
 from mesa import Agent, Model
 from .schdule import *
 from .agent import *
+from .controlagent import *
 from mesa.datacollection import DataCollector  #Data collector
 from mesa.space import SingleGrid
 
@@ -13,12 +14,14 @@ model_params = {
     "width": 20   
 }
 
+
 class ConceptModel(Model):
    
     verbose = True  # Print-monitoring
 
-    def __init__(self, height = model_params['height'] , width = model_params['width'], grid_positions = "uncontrolled" ):
     
+    def __init__(self, height = model_params['height'] , width = model_params['width'], grid_positions = "uncontrolled"  ):
+        
         
         self.schedule = CustomBaseSheduler(self)
         self.grid = SingleGrid(width, height, torus=True)
@@ -40,104 +43,46 @@ class ConceptModel(Model):
         
         ControlAgent = Charging_Control_Agent('control_value',self)
         self.schedule.add(ControlAgent)
-        
-        self.hour = EvAgent.hour
-        self.P = EvAgent.Power()
-        self.D = EvAgent.Get_Act_speed()
-        self.SOC_value = ControlAgent.SoC()
-        self.E = 10000
+
         
         if grid_positions == "uncontrolled":
-            if 9 <= self.hour <= 16:
-                print("Charge Pole is Available - U Can Charge..!!!")
-                    
-                if self.D == 0:
-                    if self.SOC_value <= 1:
-                        self.PP = -1*self.E + self.P
-                              
-                    else:
-                        self.PP = self.P
-                            
-                else:
-                    self.PP = self.P
-                    
-            else:
-                print("Charge Pole is not available....SORRY.....!!!")
-                self.PP = self.P
-                    
-            print(self.PP)
-            return self.PP 
-            
-        elif grid_positions == "V2G":
-            if 9 <= self.hour <= 16:
-                print("Charge Pole is Available - U Can Charge..!!!")
-            
-                if self.D == 0:
-                
-                    if self.SOC_value <= 0.5:
-                        self.PP = -1*self.E + self.P
-                        print("SoC less than 50% recharge to 0.5")
-                          
-                    elif  0.5< self.SOC_value <= 0.8:
-                        self.PP = -1*self.E + self.P
-                        print("It's controlled charging - G2V")
-                        
-                    else:
-                        self.PP = self.E + self.P
-                        print("It's controlled charging - V2G")
-                        
-                else:
-                    self.PP = self.P
-                
-            else:
-                print("Charge Pole is not available....SORRY.....!!!")
-                self.PP = self.P
-            return self.PP
-                
+            self.B = 0
+        elif  grid_positions == "V2G":
+            self.B = 1
         elif grid_positions == "G2V":
-            if 9 <= self.hour <= 16:
-                print("Charge Pole is Available - U Can Charge..!!!")
+            self.B = 2
             
-                if self.D == 0:
-                
-                    if self.SOC_value <= 0.5:
-                        self.PP = -1*self.E + self.P
-                        print("SoC less than 50% recharge to 0.5")
-                          
-                    elif  0.5< self.SOC_value <= 1.0:
-                        self.PP = -1*self.E + self.P
-                        print("It's controlled charging - G2V")
-                        
-                    else:
-                        self.PP = self.P   
-                        
-                else:
-                    self.PP = self.P
-                
-            else:
-                print("Charge Pole is not available....SORRY.....!!!")
-                self.PP = self.P
-                
-            print(self.PP)
-            return self.PP
         
-        
-       
        
         self.datacollector = DataCollector(
             {
-                "Solar Energy (W)": lambda m: m.schedule.getCurrentPower(SolarPanelAgent), 
+                "Solar Power (W)": lambda m: m.schedule.getCurrentPower(SolarPanelAgent), 
                 "Temperature (K)": lambda m: m.schedule.getCurrentWeather(WeatherAgent),
                 "Irradiance (W/m^2)": lambda m: m.schedule.getCurrentIrr(WeatherAgent),
-                "Reference_Speed (km/h)": lambda m: m.schedule.getreferencespeed(EV_Agent),
-                "Actual_Speed (km/h)": lambda m: m.schedule.getactualspeed(EV_Agent),
-                "SoC": lambda m: m.schedule.getSoC(Charging_Control_Agent),
-                "Charge_power (W)": lambda m: m.schedule.getactualchargepower(Charge_pole)
                 
+                "Actual_Speed (km/h)": lambda m: m.schedule.getactualspeed(EV_Agent)[0][0],
+                "Actual_Speed_2 (km/h)": lambda m: m.schedule.getactualspeed(EV_Agent)[0][1],
+                
+                "Availability_1": lambda m: m.schedule.getavailability(EV_Agent)[0][0],
+                "Availability_2": lambda m: m.schedule.getavailability(EV_Agent)[0][1],
+                
+                "SOC_CAR_1": lambda m: m.schedule.getSoC(Charging_Control_Agent)[0][self.B][0],
+                "SOC_CAR_2": lambda m: m.schedule.getSoC(Charging_Control_Agent)[0][self.B][1],
+                
+                "Car Battery Power(W)": lambda m: m.schedule.getcarbattery(Charging_Control_Agent)[0][self.B][0],
+                "Car Battery Power_2(W)": lambda m: m.schedule.getcarbattery(Charging_Control_Agent)[0][self.B][1],
+                
+                "Grid_Power (W)": lambda m: m.schedule.getactualgridpower(Charging_Control_Agent)[0][0][self.B],
+                "CP_Battery_Power (W)": lambda m: m.schedule.getactualchargepower(Charging_Control_Agent)[0][1][self.B],
+                
+                "Battery_SOC": lambda m: m.schedule.getbattsoc(Charging_Control_Agent)[0][self.B]
             }
         )
-   
+       
 
+        
+        
+        
     #create weather agent
         x = 2
         y = 18
@@ -148,25 +93,28 @@ class ConceptModel(Model):
         y = 18
         self.grid.position_agent(solarPanelAgent,x,y)
     
-    #create ev agent
-        x = 5
-        y = 10
-        self.grid.position_agent(EvAgent,x,y)
-        
+
+
     #create chargepole
         x = 6
         y = 10
         self.grid.position_agent(ChargeAgent,x,y)
-        
+    #create chargepole
+        x = 6
+        y = 9
+        self.grid.position_agent(ChargeAgent,x,y)   
     #create controlAgent
         x = 6
         y = 11
         self.grid.position_agent(ControlAgent,x,y)
-
+    
         self.running = True
+    
+        
         
     def step(self):
         self.schedule.step()
+        
         
          # collect data
         self.datacollector.collect(self)
@@ -175,10 +123,22 @@ class ConceptModel(Model):
             #print (self.schedule.getCurrentPower(SolarPanelAgent))
             #print (self.schedule.getCurrentWeather(WeatherAgent))
             #print (self.schedule.getCurrentIrr(WeatherAgent))
-            print (self.schedule.getactualspeed(EV_Agent))
-            print (self.schedule.getreferencespeed(EV_Agent))
-            #print(self.schedule.getactualchargepower(Charge_pole))
-            #print (self.schedule.getSoC(Charging_Control_Agent))
+            
+            #print (self.schedule.getactualspeed(EV_Agent)[0][0])
+            #print (self.schedule.getactualspeed(EV_Agent)[0][1])
+            
+            
+            #print(self.schedule.getSoC(Charging_Control_Agent)[0][self.B][0])
+            #print(self.schedule.getSoC(Charging_Control_Agent)[0][self.B][1])
+            
+            #print(self.schedule.getcarbattery(Charging_Control_Agent)[0][self.B][0])
+            #print(self.schedule.getcarbattery(Charging_Control_Agent)[0][self.B][1])
+            
+            #print (self.schedule.getactualgridpower(Charging_Control_Agent)[0][0][self.B])
+            #print (self.schedule.getactualchargepower(Charging_Control_Agent)[0][1][self.B])
+            
+            print (self.schedule.getbattsoc(Charging_Control_Agent)[0][self.B])
+            print(self.schedule.getavailability(EV_Agent)[0][0])
             
             
           
@@ -187,5 +147,6 @@ class ConceptModel(Model):
         for k in range(step_count):
             for i in range(7):
   #          print("Step {}".format(i))
-                for j in range(24):
+             
+             for j in range(24):
                     self.step()

@@ -53,21 +53,14 @@ class CustomBaseSheduler(BaseScheduler):
         for agent in irrAgentList:
             IrradianceList.append(round(agent.outLight,2))
         return IrradianceList 
-        
-    def getreferencespeed(self,controlAgent):
-    
-        supplyAgentList = self.getAllAgentsList(controlAgent)
-        supplylist = [];
-        for agent in supplyAgentList:
-            supplylist.append(round(agent.ReferenceSpeed,2))
-        return supplylist  
+         
         
     def getactualspeed(self,controlAgent):
     
         supplyAgentList = self.getAllAgentsList(controlAgent)
         supplylist = [];
         for agent in supplyAgentList:
-            supplylist.append(round(agent.ActualSpeed,2))
+            supplylist.append(agent.ActualSpeed)
         return supplylist 
         
     def getSoC(self,controlchargingAgent):
@@ -75,15 +68,47 @@ class CustomBaseSheduler(BaseScheduler):
         supplyAgentList = self.getAllAgentsList(controlchargingAgent)
         supplylist = [];
         for agent in supplyAgentList:
-            supplylist.append(round(agent.stateofcharge,2))
-        return supplylist  
-        
-    def getactualchargepower(self,chargepoleAgent):
+            supplylist.append(agent.stateofcharge)
+        return supplylist 
+
+    def getcarbattery(self,controlchargingAgent):
     
-        ChargepoleList = self.getAllAgentsList(chargepoleAgent)
+        supplyAgentList = self.getAllAgentsList(controlchargingAgent)
+        supplylist = [];
+        for agent in supplyAgentList:
+            supplylist.append(agent.Control_value)
+        return supplylist 
+        
+    def getactualchargepower(self,controlchargingAgent):
+    
+        ChargepoleList = self.getAllAgentsList(controlchargingAgent)
         chargelist = [];
         for agent in ChargepoleList:
-            chargelist.append(round(agent.S,2))
+            chargelist.append(agent.powervalue)
+        return chargelist 
+        
+    def getactualgridpower(self,controlchargingAgent):
+    
+        ChargepoleList = self.getAllAgentsList(controlchargingAgent)
+        chargelist = [];
+        for agent in ChargepoleList:
+            chargelist.append(agent.powervalue)
+        return chargelist 
+        
+    def getbattsoc(self,controlchargingAgent):
+    
+        ChargepoleList = self.getAllAgentsList(controlchargingAgent)
+        chargelist = [];
+        for agent in ChargepoleList:
+            chargelist.append(agent.batterysoc)
+        return chargelist    
+        
+    def getavailability(self,controlchargingAgent):
+    
+        ChargepoleList = self.getAllAgentsList(controlchargingAgent)
+        chargelist = [];
+        for agent in ChargepoleList:
+            chargelist.append(agent.a)
         return chargelist 
         
     def getCount(self, agent_class):
