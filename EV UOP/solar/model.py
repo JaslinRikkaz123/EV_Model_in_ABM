@@ -93,7 +93,14 @@ class ConceptModel(Model):
         y = 18
         self.grid.position_agent(solarPanelAgent,x,y)
     
-
+    #create ev agent
+        x = 5
+        y = 10
+        self.grid.position_agent(EvAgent,x,y)
+    #create ev agent
+        x = 5
+        y = 9
+        self.grid.position_agent(EvAgent,x,y)
 
     #create chargepole
         x = 6
