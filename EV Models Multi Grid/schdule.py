@@ -1,5 +1,3 @@
-# from collections import defaultdict
-# from typing import Dict
 from mesa.time import BaseScheduler
 
 from agents import *
@@ -13,7 +11,11 @@ class CustomBaseSheduler(BaseScheduler):
         self.time = 0
         
     def add(self,agent):
-
+  """
+        Add an Agent object to the schedule
+        Args:
+            agent: An Agent to be added to the schedule.
+        """
         agent_class = type(agent).__name__
         agent_id = agent.unique_id
 
@@ -30,6 +32,9 @@ class CustomBaseSheduler(BaseScheduler):
         self.add_reporter_params(agent, agent_id)
 
     def remove(self, agent):
+         """
+        Remove all instances of a given agent from the schedule.
+        """
         agent_class = type(agent).__name__
         agent_id = agent.unique_id
         del self.agents_dict[agent_class][agent_id]
