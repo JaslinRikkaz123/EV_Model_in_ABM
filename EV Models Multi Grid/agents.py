@@ -2,9 +2,10 @@ from mesa.agent import Agent
 from getDataFromExcel import get_XLSX_Data as data
 import numpy as np
 
-
+#Read weather data from database-getDatafromExcel
 Weather_Data = data('solardata','Sheet1',{'Temp' : float, 'Radiation':float})
 
+#Read EV data from database-getDatafromExcel
 dataset  ={'CAR-0': float, 'Accleration-0': float,'0-available': float,'CAR-1': float, 'Accleration-1': float,'1-available': float
 ,'CAR-2': float, 'Accleration-2': float,'2-available': float,'CAR-3': float, 'Accleration-3': float,'3-available': float,'CAR-4': float, 'Accleration-4': float,'4-available': float
 ,'CAR-5': float, 'Accleration-5': float,'5-available': float,'CAR-6': float, 'Accleration-6': float,'6-available': float,'CAR-7': float, 'Accleration-7': float,'7-available': float
@@ -26,14 +27,15 @@ class SolarPanelAgent(Agent):
         self.Gc = 1000
         self.Tc = 298.15
         self.alpha = 0.0043
-        
+    #calculate solar PV energy generation
     def calculateSolarEnergy(self):
 
         cellmates = self.model.grid.get_cell_list_contents ([self.pos])
         weatherAgent = cellmates[1]
 
-        G = weatherAgent.getOutdoorLight()
-        T = weatherAgent.getOutdoorTemp()
+        G = weatherAgent.getOutdoorLight() #Read irradiance value from weather agent
+        T = weatherAgent.getOutdoorTemp()  #Read temperature value from weather agent
+        
         solar_energy = 220*5*(G*self.Tow*self.neeta*self.A*(1 - self.alpha*(T-self.Tc )))/(1000*60)
         #print(solar_energy)
         return solar_energy
@@ -49,11 +51,13 @@ class WeatherAgent(Agent): # weather condition, outdoor temperature,solar irradi
         
         self.outdoorTempList = Weather_Data['Temp']
         self.outLightList = Weather_Data['Radiation']
-     
+        
+    #Updata temperature values in every 5 minutes
     def getOutdoorTemp(self):
         self.Temp = 273.15 + self.outdoorTempList[self.model.schedule.steps]
-        return self.Temp  
+        return self.Temp 
     
+    #Updata irradiance values in every 5 minutes
     def getOutdoorLight(self): 
         return self.outLightList[self.model.schedule.steps]    
             
@@ -68,29 +72,32 @@ class EV_Agent(Agent):
     def __init__(self,unique_id, model):
         super().__init__(unique_id, model)
 
-        self.actual_speed_list= EV_Data[f'CAR-{unique_id}']
-        self.accleration_list = EV_Data[f'Accleration-{unique_id}']
-        self.availability_list = EV_Data[f'{unique_id}-available']
+        self.actual_speed_list= EV_Data[f'CAR-{unique_id}']         #Read list of EVs' speed values
+        self.accleration_list = EV_Data[f'Accleration-{unique_id}'] #Read list of EVs' accleration values
+        self.availability_list = EV_Data[f'{unique_id}-available']  #Read list of EVs' availability values
         self.availability = 0
-
+        
+#Update EVs' accleration values every 5 minutes
     def getAccleration(self):
         self.accleration1 = self.accleration_list[self.model.schedule.steps]
         return  self.accleration1
         
+#Update EVs' availability in the university(working hours) every 5 minutes       
     def getAvailability(self):
         return self.availability_list[self.model.schedule.steps]
-        
+      
+#Update EVs' speed values every 5 minutes       
     def getSpeed(self):
         self.Actual_speed1 = self.actual_speed_list[self.model.schedule.steps]
         return  self.Actual_speed1    
      
-    def Energy(self):
+    def Energy(self): #Calculate/Update Energy consumption of each EVs
         
-        
+   
         self.Actual_speed1 = self.actual_speed_list[self.model.schedule.steps]
+        self.accleration1 = self.accleration_list[self.model.schedule.steps]
         
         self.AuxiliaryPower =300
-        self.accleration1 = self.accleration_list[self.model.schedule.steps]
         self.alpha_regeneration = 0.4
        
         self.Mass_Vehicle = 1577
@@ -110,12 +117,10 @@ class EV_Agent(Agent):
         self.Inertia_Resistance = self.Rotery_inertia_coeff*self.Mass_Vehicle*abs(self.accleration1)
         
         self.R_Force = self.Rolling_Resistance + self.Gradiant + self.Aero_Dynamic + self.Inertia_Resistance
-        
     
         self.Powerusage = 0.277*self.R_Force*self.Actual_speed1
         
         self.power_train_eff = 0.96
-        
         self.Power_Traction = self.Powerusage/self.power_train_eff
         self.Power_Braking = self.alpha_regeneration*self.Powerusage
      
@@ -135,16 +140,16 @@ class EV_Agent(Agent):
         
         return self.Battery_Power
            
-    # def carSOC(self):
+     def carSOC(self):#Read the SOC value of EVs' from charging control agent
        
-        # cellmates = self.model.grid.get_cell_list_contents ([self.pos])
-        # chargingcontrolagent = cellmates[1]
+         cellmates = self.model.grid.get_cell_list_contents ([self.pos])
+         chargingcontrolagent = cellmates[1]
 
-        # self.SOC_value = chargingcontrolagent.SoC()
+         self.SOC_value = chargingcontrolagent.SoC()
    
-        # return self.SOC_value
+         return self.SOC_value
 
-    def Total_car_Energy(self):
+    def Total_car_Energy(self):#Read the charging energy value of EVs' from charging control agent
         cellmates = self.model.grid.get_cell_list_contents ([self.pos])
         chargingcontrolagent = cellmates[1]
 
@@ -163,12 +168,12 @@ class EV_Agent(Agent):
 
 #_________________________________________________________________________________  Utility_Grid  _______________________________
 
-class Utility_Grid(Agent):
+class Utility_Grid(Agent):#It is a unlimited energy resourse - return grid supply and injected energy values
 
     def __init__(self,unique_id, model):
         super().__init__(unique_id, model)
 
-    def Grid_Power(self):
+    def Grid_Power(self):#Read the Grid supply and inject energy value from main control agent
 
         
         all_maincontrol_agents_in_grid = self.model.schedule.getAllAgentsListByClass(Main_Control_Agent)
@@ -183,8 +188,9 @@ class Utility_Grid(Agent):
 
 
 #_________________________________________________________________________________  Battery_Storage  _______________________________
-      
-class Battery_Storage(Agent):
+ ###I use 20kWh battery storage capacity, 10kW maximum power limit, capital cost = €398/kWh, Nominal Voltage = 51.2 and Nominal capacity = 400Ah###
+
+class Battery_Storage(Agent):#Update BS's charging and discharing energy and it's SOC values
 
     def __init__(self,unique_id, model):
         super().__init__(unique_id, model)
@@ -195,7 +201,7 @@ class Battery_Storage(Agent):
         self.daylist = [-1];
         self.lifecycle_list = [1571.56];
         
-    def battery_power(self):
+    def battery_power(self):#Read Battery charging and discharging energy from main control agent
         all_maincontrol_agents_in_grid = self.model.schedule.getAllAgentsListByClass(Main_Control_Agent)
         
         for mca in all_maincontrol_agents_in_grid:
@@ -203,7 +209,7 @@ class Battery_Storage(Agent):
             
         return self.Batteryenergy
 
-    def battery_SOC(self):
+    def battery_SOC(self):#Calculate/Update BS's SOC value based on BS's charging and discharging energy
         self.daylist.append(self.model.day)
         
         if self.daylist[self.s-1] == -1:
@@ -217,7 +223,7 @@ class Battery_Storage(Agent):
         print("Battsoc:{}".format(self.batterySOC))
         return round(self.batterySOC,2)
         
-    def degradation_cost(self):
+    def degradation_cost(self):#Calculate BS's degradation cost as per the lifecycle and DOD.
     
         self.daylist.append(self.model.day)
         capital_cost = 100000
@@ -254,7 +260,7 @@ class Battery_Storage(Agent):
                                                                                                                                                                   
 #_________________________________________________________________________________  Charge_pole  _______________________________
 
-class Charge_pole(Agent):
+class Charge_pole(Agent):#ADD as dummy agent for future development 
  
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
@@ -264,7 +270,8 @@ class Charge_pole(Agent):
         pass
 
 #__________________________________________________________  Charging_Control_Agent  _______________________________ 
-class Charging_Control_Agent(Agent):
+###It reads solar panel agent energy, EV agent energy consumption and calculate/update charging energy as per the charging control###
+class Charging_Control_Agent(Agent):#Each CCA controls the EV agents' charging scenario
     def __init__(self,unique_id, model):
         super().__init__(unique_id, model)
 
@@ -284,14 +291,15 @@ class Charging_Control_Agent(Agent):
         self.E0 = 2300*5/60
         self.E1 = 6600*5/60
         self.E2 = 30000*5/60
-    def EV_data(self):
+        
+    def EV_data(self):#Read EV agent energy consumption
    
         cellmates = self.model.grid.get_cell_list_contents ([self.pos])
         evagent = cellmates[0]
         self.energy = evagent.Energy()
         return self.energy
          
-    def Solar_Data(self):
+    def Solar_Data(self):#Read solar energy generation
         all_SOLAR_agents_in_grid = self.model.schedule.getAllAgentsListByClass(SolarPanelAgent)
         
         for solar in all_SOLAR_agents_in_grid:
@@ -299,7 +307,7 @@ class Charging_Control_Agent(Agent):
        
         return self.solar_energy
 
-    def SoC(self):
+    def SoC(self):#calculate/Update EVs' SOC as per the energy consumption
         
         
         self.Opencircuit_Voltage = 312.96
@@ -312,19 +320,19 @@ class Charging_Control_Agent(Agent):
         i = (self.Opencircuit_Voltage - ((self.Opencircuit_Voltage)**2 - 4*self.Battery_Resistance*self.Power*1000 )**0.5)*0.5/self.Battery_Resistance
         value = i/(self.initial_current_capacity)
         
-            #Update SOC value of EV as 1 in every start of the day otherthan that,calculate SOC w.r.t value
+        #Update SOC value of EV as 1 in every start of the day otherthan that,calculate SOC w.r.t value
         if self.daylist[self.s-1] != self.model.day:
 
             self.SOC_value = 1
-                
-                
+         
         else:
             self.SOC_value = self.SOC_value + -1*value
    
         #print(self.SOC_value)
         return self.SOC_value 
         
-    def Charging_control(self):
+    def Charging_control(self):#Calculate/Update charging energy as per the charging option
+        
         cellmates = self.model.grid.get_cell_list_contents ([self.pos])
         evagent = cellmates[0]
         self.availability = evagent.getAvailability()
@@ -526,7 +534,7 @@ class Charging_Control_Agent(Agent):
         
    
   #_________________________________________________________________________________  Main_Control_Agent  _______________________________  
-class Main_Control_Agent(Agent):
+class Main_Control_Agent(Agent):#Its like a processor of the system, calculate aggregated EVs energy consumption and calculate cost value
     def __init__(self,unique_id, model):
         super().__init__(unique_id, model)
         self.daylist = [-1];
@@ -568,7 +576,7 @@ class Main_Control_Agent(Agent):
         self.pricing = self.model.price_structure
         self.TOU_Charging = self.model.TOU_Charging_structure
 
-    def Car_Total_demand(self):
+    def Car_Total_demand(self):#Calculate aggregated EVs' energy consumption
         self.total = 0
         self.total1 = 0
         self.Delta = 0
@@ -586,8 +594,11 @@ class Main_Control_Agent(Agent):
             #print(self.Delta)
         return self.Delta    
         
-    def power_management(self):
-            
+    def power_management(self):#Calculate/Update energy value based on energy management algorithm.
+         '''It has two charging scenarios as SOC based and TOU tariff based. SOC based charging has a flat tariff system. 
+         Which has Uncontrolled,V2G,G2V and G2V-slow charging scenarios.TOU tariff based charging has timly based cost value.
+         Which has slow, Average and Fast charging scenarios.'''
+          
         SOC_max_value = 0.79
         SOC_min_value = 0.21
         self.price =0
@@ -958,7 +969,7 @@ class Main_Control_Agent(Agent):
         return self.value
     
 
-    def Batt_SOC_Read(self):
+    def Batt_SOC_Read(self):#Calculate/Update BS's SOC value as per battery charging and discharging energy
 
         self.battery_storage_cap = 20000
         self.daylist.append(self.model.day)
@@ -976,7 +987,7 @@ class Main_Control_Agent(Agent):
         
 
 
-    def price_value(self):
+    def price_value(self):#Unit price value for charging
         '''Grid_Injected Price'''
         self.Grid_Injected_Price = 22
         
@@ -1088,7 +1099,7 @@ class Main_Control_Agent(Agent):
         print("Total Battery Discharging energy in kWh: {}".format(round(self.Battery_Discharging_Energy,2)))
         return energy
 
-    def Total_Price(self):
+    def Total_Price(self):#Total cost calculation
         self.EVCharging_price = self.value[0]
         self.CEBEVCharging_price = self.value[1]
         self.Gridprice = self.value[2]
@@ -1107,11 +1118,8 @@ class Main_Control_Agent(Agent):
         self.s += 1
 
         self.carTdemand = self.Car_Total_demand()
-        
         self.powervalue = self.power_management()
         self.battvalueread = self.Batt_SOC_Read()
-        #self.battcost = self.degradation_cost()
-        
         self.price = self.price_value()
         self.totalenergy = self.Total_Energy()
         self.totalprice = self.Total_Price()
