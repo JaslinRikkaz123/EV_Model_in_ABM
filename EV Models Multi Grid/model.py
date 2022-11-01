@@ -1,11 +1,11 @@
 from mesa.model import Model
 from schdule import CustomBaseSheduler
-# from agents import *      #  control agent already import other agents
 from agents import *
 
 from mesa.datacollection import DataCollector  #Data collector
 from mesa.space import MultiGrid, SingleGrid
 
+#Create the grid with model_params
 model_params = {
     "height": 20,
     "width": 20   
@@ -44,7 +44,7 @@ class ConceptModel(Model):
             self.grid.place_agent(ExbatteryAgent, (cord[0], cord[1])) 
 
         for id,cord in {'0':(0,14) , '1': (0,13),  '2': (0,12), '3': (0,11),  '4': (0,10),  '5': (0,9), '6': (0,8), '7': (0,7), '8': (0,6), '9': (0,5), '10': (0,4), '11': (0,3)
-        , '12': (0,2)}.items():             # EV agent  and Charging_Control_Agent  are in one grid 
+        , '12': (0,2)}.items():             # EV agent  and Charging_Control_Agent  are in one cell-Multi grid 
             evAgent = EV_Agent(id,self)
             controlAgent = Charging_Control_Agent(id,self)
             self.schedule.add(evAgent)
@@ -65,7 +65,7 @@ class ConceptModel(Model):
             self.grid.place_agent(solarPanelAgent, (cord[0], cord[1]))   
             self.grid.place_agent(weatherAgent, (cord[0], cord[1])) 
 
-        for id,cord in {'UG':(5,14)}.items():             # chargepole_agent    
+        for id,cord in {'UG':(5,14)}.items():             
             utility_agent = Utility_Grid(id,self)
             self.schedule.add(utility_agent)
             self.grid.place_agent(utility_agent, (cord[0], cord[1]))        # Utility agent
@@ -96,7 +96,7 @@ class ConceptModel(Model):
             self.month +=1
             self.week = 1
                
-        #print(  "Week : {} Day : {} Hour : {} minute: {}\n".format(self.week, self.day, self.hour,self.minute))     
+        print(  "Week : {} Day : {} Hour : {} minute: {}\n".format(self.week, self.day, self.hour,self.minute))     
         
         '''This is getting RESET AlWAYS - see the console - values might be different, because the agents load values from shedule.steps'''   
   
