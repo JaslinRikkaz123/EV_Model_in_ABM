@@ -93,11 +93,6 @@ chart_element6 = ChartModule(
     [{"Label": "MCA1 : Grid_Injected_Price (rs)", "Color": "#8B008B"}, {"Label": "MCA1 : CEB_EV_Price (rs)", "Color": "#BA55D3"}, 
     {"Label": "MCA1 : EV_Price (rs)", "Color": "#FF1493"}, {"Label": "MCA1 : Grid_Price (rs)", "Color": "#F4A460"}])   
 
-# chart_element9 = ChartModule(
-#     [{"Label": "1 : rs", "Color": "#AA0000"},{"Label": "2 : rs", "Color": "#0000FF"},{"Label": "3 : rs", "Color": "#FF1493"},{"Label": "4 : rs", "Color": "#FF8C00"}
-#     ,{"Label": "5 : rs", "Color": "#B8860B"},{"Label": "6 : rs", "Color": "#008080"},{"Label": "7 : rs", "Color": "#D2691E"},{"Label": "8 : rs", "Color": "#F4A460"},{"Label": "9 : rs", "Color": "#FF6347"}
-#     ,{"Label": "10 : rs", "Color": "#BA55D3"},{"Label": "11 : rs", "Color": "#FF4500"},{"Label": "12 : rs", "Color": "#7CFC00"}]  ,canvas_height=500,canvas_width=1000,title = "Total Price in Rs"  )
-
 choice_option = {"price_structure":UserSettableParameter('choice', 'Price_option', value='TOU',
                                               choices = ConceptModel.price_structure),
                 "Flat_Charging_structure":UserSettableParameter('choice', 'Flat_Charge_structure', value='uncontrolled',
